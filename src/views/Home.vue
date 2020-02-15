@@ -1,0 +1,102 @@
+<template>
+  <div class="home">
+    <div class="row">
+      <div class="col-8 offset-2">
+        <div class="input-group mb-3">
+          <input v-model="location" type="text" class="form-control" placeholder="Enter Location"/>
+          <div class="input-group-append">
+            <button @click="updateLocation" class="btn btn-outline-secondary" type="button">
+              Search
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="forecast" class="col-8 offset-2 text-center">
+        <div class="card text-white bg-secondary mb-3">
+          <div class="card-header">Current Weather in {{address}}</div>
+          <div class="card-body">
+            <h4 class="card-title">{{ forecast.currently.summary }}</h4>
+            <div class="card-text icon-temp">
+              <span class="emoji"> {{ icons[forecast.currently.icon] }}</span>
+              {{ forecast.currently.temperature }} °C
+            </div>
+            <div class="card-text">
+              {{ forecast.currently.precipProbability }} % of precipitations
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-8 offset-2">
+        <iframe id="map-embed-iframe" :src="embedURL"
+        frameborder="0" height="500px" width="100%"></iframe>
+      </div>
+    </div>
+  </div>
+</template>
+<script>
+import API from '@/lib/API';
+
+export default {
+  name: 'Home',
+  data() {
+    return {
+      embedURL: '',
+      address: localStorage.adress || '',
+      location: localStorage.location || '',
+      forecast: null,
+      icons: {
+        'clear-day': '😐',
+        'clear-night': '🌝',
+        rain: '☔️',
+        snow: '⛄️',
+        sleet: '🍦',
+        wind: '💨',
+        fog: '🐸',
+        cloudy: '☁️',
+        'partly-cloudy-day': '⛅️',
+        'partly-cloudy-night': '🌌',
+      },
+    };
+  },
+  mounted() {
+    this.loadWeather(localStorage.lat || '37.8267', localStorage.lon || '-122.4233');
+  },
+  methods: {
+    loadWeather(lat, lon) {
+      localStorage.lat = lat;
+      localStorage.lon = lon;
+
+      this.embedURL = API.getEmbedURL(lat, lon);
+
+      API.getAddress(lat, lon).then((result) => {
+        this.address = [result.name, result.street].join(' ');
+        localStorage.address = this.address;
+      });
+      API.getForecast(lat, lon).then((result) => {
+        this.forecast = result;
+      });
+    },
+    updateLocation() {
+      localStorage.location = this.location;
+      API.getCoordinates(this.location).then((result) => {
+        this.loadWeather(result.latitude, result.longitude);
+      });
+    },
+  },
+};
+</script>
+
+<style>
+body {
+  font-size: 2em;
+}
+
+.icon-temp {
+  font-size: 2em;
+}
+
+.emoji {
+  font-size: 2em;
+}
+</style>
